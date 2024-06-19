@@ -117,7 +117,8 @@ def process_excel(file_path, output_dir):
     df = df[['Section','Course Name','Credit','Professor','Time/Date','Room','Course Code']] 
     
     # 출력 파일명 생성
-    output_file_path = os.path.join(output_dir, os.path.basename(file_path))
+    new_filename = os.path.splitext(os.path.basename(file_path))[0].split('_')[0] + "_Fall2024.xlsx"
+    output_file_path = os.path.join(output_dir, new_filename)
     df.to_excel(output_file_path, index=False)
     print(f"완료된 학교: {output_file_path}")
 
