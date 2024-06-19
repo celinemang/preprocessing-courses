@@ -123,7 +123,7 @@ def process_excel(file_path, output_dir):
     print(f"완료된 학교: {output_file_path}")
 
 # 파일이 있는 디렉토리
-source_directory = '/Users/celine/Desktop/crw/Fall 2024_new'
+source_directory = '/Users/celine/Desktop/crw/Fall 2024_new/ready'
 output_directory = '/Users/celine/Desktop/crw/Fall 2024.final'
 
 # 소스 디렉토리의 모든 파일을 순회
