@@ -1,5 +1,7 @@
 import os
+import re
 import pandas as pd
+
 
 
 def process_excel(file_path, output_dir):
@@ -13,17 +15,10 @@ def process_excel(file_path, output_dir):
         'Subjects', 
         'Numbers', 
         'Sections', 
-        'Abbreviated Titles', 
-        'Descriptions', 
-        'Attributes', 
-        'Schedule Types',
-        'Registration Dates',
-        'Restrictions',
+        'Abbreviated Titles',  
         'Level Restrictions',
         'Campus Restrictions',
         'Professor Ratings',
-        'Classes','Semesters',
-        'Additional Course Names',
 
         ],axis = 1, inplace=True)
 
@@ -32,6 +27,18 @@ def process_excel(file_path, output_dir):
     df['Days'] = df['Days'].apply(lambda x: x.replace('TBA', '') if pd.notna(x) else x)
     df['Times'] = df['Times'].apply(lambda x: '' if x == 'TBA-TBA' else x)
     df['Credits'] = df['Credits'].apply(lambda x: '' if x == 'TBA' else x)
+
+    # 시간 정보를 추출하기 위한 정규 표현식 패턴
+    pattern = r'\d{1,2}:\d{2}[ap]m-\d{1,2}:\d{2}[ap]m'
+    def extract_time(text):
+        match = re.search(pattern, text)
+        if match:
+            return match.group()  # 매칭된 시간 정보 반환
+        else:
+            return ''  # 매칭되는 시간 정보가 없으면 None 반환
+
+    # 'Times' 칼럼에 함수 적용
+    df['Times'] = df['Times'].apply(extract_time)
 
     
     
@@ -61,7 +68,7 @@ def process_excel(file_path, output_dir):
         # 각 파트를 처리
         for part in parts:
             # 각 문자를 해당 요일의 약어로 변환
-            part = part.replace('M', 'Mo').replace('W', 'We').replace('F', 'Fr')
+            part = part.replace('M', 'Mo').replace('W', 'We').replace('F', 'Fr').replace('Sat','Sa').replace('Sun','Su')
             # 쉼표로 각 약어를 구분
             formatted = ','.join([part[i:i+2] for i in range(0, len(part), 2)])
             formatted_parts.append(formatted)
@@ -115,7 +122,7 @@ def process_excel(file_path, output_dir):
     print(f"완료된 학교: {output_file_path}")
 
 # 파일이 있는 디렉토리
-source_directory = '/Users/celine/Desktop/crw/Fall 2024_Total/error'
+source_directory = '/Users/celine/Desktop/crw/Fall 2024_new'
 output_directory = '/Users/celine/Desktop/crw/Fall 2024.final'
 
 # 소스 디렉토리의 모든 파일을 순회
