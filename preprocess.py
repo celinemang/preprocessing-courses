@@ -27,18 +27,7 @@ def process_excel(file_path, output_dir):
     df['Days'] = df['Days'].apply(lambda x: x.replace('TBA', '') if pd.notna(x) else x)
     df['Times'] = df['Times'].apply(lambda x: '' if x == 'TBA-TBA' else x)
     df['Credits'] = df['Credits'].apply(lambda x: '' if x == 'TBA' else x)
-
-    # 시간 정보를 추출하기 위한 정규 표현식 패턴
-    pattern = r'\d{1,2}:\d{2}[ap]m-\d{1,2}:\d{2}[ap]m'
-    def extract_time(text):
-        match = re.search(pattern, text)
-        if match:
-            return match.group()  # 매칭된 시간 정보 반환
-        else:
-            return ''  # 매칭되는 시간 정보가 없으면 None 반환
-
-    # 'Times' 칼럼에 함수 적용
-    df['Times'] = df['Times'].apply(extract_time)
+ 
 
     
     
@@ -77,6 +66,9 @@ def process_excel(file_path, output_dir):
         return '/'.join(formatted_parts)
 
     df['Days'] = df['Days'].apply(format_days)
+        # 'Times' 열에 대해 'NoRoomRequired'부터 문자열 끝까지 제거
+    df['Times'] = df['Times'].apply(lambda x: x.split('NoRoomRequired')[0])
+
 
 
     def format_time_date(row):
@@ -101,6 +93,10 @@ def process_excel(file_path, output_dir):
     # apply 함수를 사용하여 각 행에 format_time_date 함수 적용
     df['Time/Date'] = df.apply(format_time_date, axis=1)
     df['Time/Date'] = df['Time/Date'].apply(lambda x: '' if x == '/' else x)
+
+
+
+
 
     # DataFrame에 적용
     df.drop(columns=['Days','Times'], inplace=True)
