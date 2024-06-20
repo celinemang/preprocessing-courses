@@ -27,7 +27,7 @@ def process_excel(file_path, output_dir):
     df['Days'] = df['Days'].apply(lambda x: x.replace('TBA', '') if pd.notna(x) else x)
     df['Times'] = df['Times'].apply(lambda x: '' if x == 'TBA-TBA' else x)
     df['Credits'] = df['Credits'].apply(lambda x: '' if x == 'TBA' else x)
- 
+    df['Links to Professor Reviews'] = df['Links to Professor Reviews'].apply(lambda x: '' if x == '- -' else x)
 
     
     
@@ -57,7 +57,7 @@ def process_excel(file_path, output_dir):
         # 각 파트를 처리
         for part in parts:
             # 각 문자를 해당 요일의 약어로 변환
-            part = part.replace('M', 'Mo').replace('W', 'We').replace('F', 'Fr').replace('Sat','Sa').replace('Sun','Su')
+            part = part.replace('M', 'Mo').replace('W', 'We').replace(' thru ','Th').replace('F', 'Fr').replace('Sat','Sa').replace('Sun','Su')
             # 쉼표로 각 약어를 구분
             formatted = ','.join([part[i:i+2] for i in range(0, len(part), 2)])
             formatted_parts.append(formatted)
