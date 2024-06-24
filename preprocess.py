@@ -25,9 +25,19 @@ def process_excel(file_path, output_dir):
 
     #TBA 제거
     df['Days'] = df['Days'].apply(lambda x: x.replace('TBA', '') if pd.notna(x) else x)
-    df['Times'] = df['Times'].apply(lambda x: '' if x == 'TBA-TBA' else x)
+    
     df['Credits'] = df['Credits'].apply(lambda x: '' if x == 'TBA' else x)
     df['Links to Professor Reviews'] = df['Links to Professor Reviews'].apply(lambda x: '' if x == '- -' else x)
+    def filter_tba_time_segments(time_string):
+    # '/'로 구분된 시간 구간을 분리
+        segments = time_string.split('/')
+        # 'TBA-TBA'를 제외한 시간 구간만 필터링
+        filtered_segments = [segment for segment in segments if segment != 'TBA-TBA']
+        # 결과를 '/'로 다시 연결
+        return '/'.join(filtered_segments)
+
+    # DataFrame의 'Times' 칼럼에 함수 적용 예시
+    df['Times'] = df['Times'].apply(filter_tba_time_segments)
 
     
     
@@ -61,41 +71,74 @@ def process_excel(file_path, output_dir):
             # 쉼표로 각 약어를 구분
             formatted = ','.join([part[i:i+2] for i in range(0, len(part), 2)])
             formatted_parts.append(formatted)
+            
+
         
         # '/'로 다시 연결
         return '/'.join(formatted_parts)
 
     df['Days'] = df['Days'].apply(format_days)
-        # 'Times' 열에 대해 'NoRoomRequired'부터 문자열 끝까지 제거
-    df['Times'] = df['Times'].apply(lambda x: x.split('NoRoomRequired')[0])
 
 
+    
+    def convert_to_24h(time_str):
+        # 시간과 분, 그리고 AM/PM을 추출
+        time_str.split('-')
+        match = re.match(r'(\d+):(\d+)(am|pm)', time_str)
+        if not match:
+            return time_str  # 일치하지 않으면 원래 문자열을 반환
 
-    def format_time_date(row):
-        # Days와 Times를 '/'로 분리
-        days_parts = row['Days'].split('/') if pd.notna(row['Days']) else []
-        times_parts = row['Times'].split('/') if pd.notna(row['Times']) else []
-        
-        # 분할된 각 파트의 최소 길이를 확인하여 적절히 처리
-        num_parts = min(len(days_parts), len(times_parts))
-        
-        # 각 파트별로 조합 생성
-        formatted_parts = []
-        for i in range(num_parts):
-            if days_parts[i] != '' and times_parts[i] != '':
-                formatted_part = f"{days_parts[i]}/{times_parts[i]}"
-                if formatted_part not in formatted_parts:  # 중복 방지
-                    formatted_parts.append(formatted_part)
-        
-        # 모든 조합을 쉼표로 구분하여 하나의 문자열로 반환
-        return ', '.join(formatted_parts)
+        hour, minute, period = match.groups()
+        hour = int(hour)
+        minute = int(minute)
 
-    # apply 함수를 사용하여 각 행에 format_time_date 함수 적용
-    df['Time/Date'] = df.apply(format_time_date, axis=1)
-    df['Time/Date'] = df['Time/Date'].apply(lambda x: '' if x == '/' else x)
+        # PM인 경우 12를 더하고, 12:00 PM은 예외적으로 12로 처리
+        if period == 'pm':
+            if hour != 12:
+                hour += 12
+        elif period == 'am' and hour == 12:
+            hour = 0  # 12 AM은 0시
+
+        return f"{hour:02}:{minute:02}"
+
+    def convert_time_range(time_range):
+        if '-' in time_range:
+            start_time, end_time = time_range.split('-')
+            start_24h = convert_to_24h(start_time.strip())
+            end_24h = convert_to_24h(end_time.strip())
+        else:
+            # '-'가 없는 경우, 동일한 시간으로 시작과 끝을 처리
+            start_24h = convert_to_24h(time_range.strip())
+            end_24h = start_24h  # 끝 시간을 시작 시간과 동일하게 설정
+
+        return f"{start_24h}-{end_24h}"
+
+    def formatted_parts(row):
+        days_list = row['Days'].split('/')
+        days_list = row['Days'].split(',')
+        time_ranges = row['Times'].split('/')
+        results = []
+
+        # 모든 요일에 대해 각각의 시간 매핑
+        for day in days_list:
+            for time_range in time_ranges:
+                if '-' in time_range:
+                    start_time, end_time = time_range.split('-')
+                    start_24h = convert_to_24h(start_time.strip())
+                    end_24h = convert_to_24h(end_time.strip())
+                    results.append(f"{day}/{start_24h}-{end_24h}")
+
+        # 중복 제거
+        unique_results = sorted(set(results))
+        return ', '.join(unique_results)
 
 
+    df['Time/Date'] = df.apply(formatted_parts, axis=1)
 
+    
+
+
+  
 
 
     # DataFrame에 적용
@@ -120,7 +163,7 @@ def process_excel(file_path, output_dir):
 
 # 파일이 있는 디렉토리
 source_directory = '/Users/celine/Desktop/crw/Fall 2024_new/ready'
-output_directory = '/Users/celine/Desktop/crw/Fall 2024.final'
+output_directory = '/Users/celine/Desktop/crw'
 
 # 소스 디렉토리의 모든 파일을 순회
 for filename in os.listdir(source_directory):
