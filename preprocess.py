@@ -112,12 +112,14 @@ def process_excel(file_path, output_dir):
             end_24h = start_24h  # 끝 시간을 시작 시간과 동일하게 설정
 
         return f"{start_24h}-{end_24h}"
+    print(df['Days'].iloc[6055:6066])
 
     def formatted_parts(row):
         days_list = row['Days'].split('/')
         days_list = row['Days'].split(',')
         time_ranges = row['Times'].split('/')
         results = []
+
 
         # 모든 요일에 대해 각각의 시간 매핑
         for day in days_list:
@@ -162,7 +164,7 @@ def process_excel(file_path, output_dir):
     print(f"완료된 학교: {output_file_path}")
 
 # 파일이 있는 디렉토리
-source_directory = '/Users/celine/Desktop/crw/Fall 2024_new/ready'
+source_directory = '/Users/celine/Desktop/crw/Fall 2024.final/ready'
 output_directory = '/Users/celine/Desktop/crw'
 
 # 소스 디렉토리의 모든 파일을 순회
