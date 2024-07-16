@@ -11,18 +11,18 @@ def process_excel(file_path, output_dir):
 
     # 특정 열 제거
 
-    df.drop(columns=[
-        'Subjects', 
-        'Numbers', 
-        'Sections', 
-        'Abbreviated Titles',  
-        'Level Restrictions',
-        'Campus Restrictions',
-        'Professor Ratings',
+    # df.drop(columns=[
+    #     'Subjects', 
+    #     'Numbers', 
+    #     'Sections', 
+    #     'Abbreviated Titles',  
+    #     'Level Restrictions',
+    #     'Campus Restrictions',
+    #     'Professor Ratings',
 
-        ],axis = 1, inplace=True)
+    #     ],axis = 1, inplace=True)
 
-
+    df['Times'] = df['Times'].apply(lambda x: x.split('NoRoomRequired')[0])
     #TBA 제거
     df['Days'] = df['Days'].apply(lambda x: x.replace('TBA', '') if pd.notna(x) else x)
     
@@ -38,6 +38,7 @@ def process_excel(file_path, output_dir):
 
     # DataFrame의 'Times' 칼럼에 함수 적용 예시
     df['Times'] = df['Times'].apply(filter_tba_time_segments)
+
 
     
     
@@ -112,30 +113,54 @@ def process_excel(file_path, output_dir):
             end_24h = start_24h  # 끝 시간을 시작 시간과 동일하게 설정
 
         return f"{start_24h}-{end_24h}"
-
+   
     def formatted_parts(row):
-        days_list = row['Days'].split('/')
-        days_list = row['Days'].split(',')
-        time_ranges = row['Times'].split('/')
-        results = []
-
-        # 모든 요일에 대해 각각의 시간 매핑
-        for day in days_list:
-            for time_range in time_ranges:
-                if '-' in time_range:
-                    start_time, end_time = time_range.split('-')
-                    start_24h = convert_to_24h(start_time.strip())
-                    end_24h = convert_to_24h(end_time.strip())
-                    results.append(f"{day}/{start_24h}-{end_24h}")
-
-        # 중복 제거
-        unique_results = sorted(set(results))
-        return ', '.join(unique_results)
-
-
-    df['Time/Date'] = df.apply(formatted_parts, axis=1)
-
     
+    # 'Days' 값을 '/' 기준으로 분리
+        day_splits = row['Days'].split('/')
+        # 'Times' 값을 '/' 기준으로 분리
+        time_ranges = row['Times'].split('/')
+
+        results = set()
+
+        if len(day_splits) == len(time_ranges):
+            # 요일과 시간의 갯수가 동일하면 직접 매핑
+            for day_group, time_range in zip(day_splits, time_ranges):
+                days = day_group.split(',')
+                time = convert_time_range(time_range)
+                for day in days:
+                    results.add(f"{day}/{time}")
+        else:
+            # '/'로 분리된 요일 그룹이 없으면 모든 요일에 동일한 시간 적용
+            time = convert_time_range(time_ranges[0])
+            for day_group in day_splits:
+                days = day_group.split(',')
+                for day in days:
+                    results.add(f"{day}/{time}")
+
+        return ', '.join(sorted(results))
+    df['Time/Date'] = df.apply(formatted_parts, axis=1)
+    df['Time/Date'] = df['Time/Date'].apply(lambda x: '' if x == '/-' else x)
+
+    def timedate(timeday):
+        # ','를 기준으로 문자열을 분리
+        parts = timeday.split(',')
+        formatted_parts = []
+        
+        # 각 파트를 처리
+        for part in parts:
+            if len(part.strip()) == 14:
+                formatted_parts.append(part.strip())
+            else:
+                # 길이가 14가 아닌 경우 무시
+                continue
+
+        # 유효한 파트만 ','로 다시 연결
+        return ','.join(formatted_parts)
+
+    # DataFrame의 'Time/Date' 열에 함수 적용
+    df['Time/Date'] = df['Time/Date'].apply(timedate)
+
 
 
   
@@ -163,6 +188,7 @@ def process_excel(file_path, output_dir):
 
 # 파일이 있는 디렉토리
 source_directory = '/Users/celine/Desktop/crw/Fall 2024_new/ready'
+
 output_directory = '/Users/celine/Desktop/crw'
 
 # 소스 디렉토리의 모든 파일을 순회
